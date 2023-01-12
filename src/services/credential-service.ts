@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import crypto from "crypto"
+import * as crypto from "crypto";
 import { addCredentialData, createCredentialFile } from "../credentials/fs-config";
 
 interface InputCustomData {
@@ -13,6 +13,12 @@ interface Result {
   credentials: any;
 };
 
+// encryption machine info
+const encryption_alg: string = 'aes-256-cbc';
+const init_vector: Buffer = crypto.randomBytes(16);
+const security_key: Buffer = crypto.randomBytes(32);
+
+
 async function getCredentials (req: Request, res: Response) {
   try {
     // data to validation
@@ -20,6 +26,7 @@ async function getCredentials (req: Request, res: Response) {
       login: req.query.login + "",
       password: req.query.password + "",
     };
+
     // data to credentials
     const app: string = req.params.app.toLowerCase();
     const env: string = req.query.env + "";
@@ -28,7 +35,7 @@ async function getCredentials (req: Request, res: Response) {
     if (!req.params.app || !req.query.env || !req.query.channel) {
       
       res.status(406).json("requires application and environment data");
-    }
+    };
       
     const credentials = require(`../credentials/${app}-credentials.json`).credentials;
     const result: Result = {
@@ -42,7 +49,7 @@ async function getCredentials (req: Request, res: Response) {
       "[ CREDENTIALS | credential-service.ts ] return credentials:",
       `\n${JSON.stringify(result.credentials)}`
     );
-      
+    
     res.status(200).json(result);
   }
   catch (error) {
@@ -53,7 +60,25 @@ async function getCredentials (req: Request, res: Response) {
 
 async function addCredentials (req: Request, res: Response) {
   const folderName: string = req.body.folderName;
-  const credentialsData: object = req.body.credentialsData
+  const credentialsData: object = req.body.credentialsData;
+
+  await console.log(credentialsData);
+
+  // cipher initialization
+  const cipher: crypto.Cipher = cryptoCipheriv(
+    encryption_alg, security_key, init_vector
+  );
+  
+  // encryption
+  let encrypted_CredentialsData: string = cipher.update(
+    JSON.stringify(credentialsData), 'utf-8', 'hex'
+  );
+
+  // cipher enclosure
+  encrypted_CredentialsData += cipher.final("hex");
+
+  await console.log(encrypted_CredentialsData);
+
 
   try {
     console.log(
@@ -62,7 +87,7 @@ async function addCredentials (req: Request, res: Response) {
       `\n${JSON.stringify(credentialsData)}`
     );
 
-    await addCredentialData(folderName, credentialsData);
+    await addCredentialData(folderName, encrypted_CredentialsData);
     await createCredentialFile(folderName);
 
     res.status(200).json(`credential file successfully created: ${folderName}`);
