@@ -36,9 +36,24 @@ async function getCredentials (req: Request, res: Response) {
       
       res.status(406).json("requires application and environment data");
     };
-      
-    let encrypted_credentials: string = require(`../credentials/${app}-credentials.json`);
-    const credentials = JSON.parse(encrypted_credentials).credentials
+    
+    // fetch encrypted data
+    let encrypted_data: string = require(`../credentials/${app}-credentials.json`);
+
+    // decipher initialization
+    const decipher: crypto.Decipher = crypto.createDecipheriv(
+      encryption_alg, security_key, init_vector
+    );
+    
+    // decryption
+    let decrypted_data: string = decipher.update(
+      encrypted_data, 'hex', 'utf-8'
+    );
+
+    // decipher enclosure
+    decrypted_data += decipher.final('utf-8')
+
+    const credentials = JSON.parse(decrypted_data).credentials
     const result: Result = {
       success: true,
       application: app.toUpperCase(),
