@@ -1,6 +1,6 @@
 import fs from "fs-extra"
 
-async function addCredentialData (folderName: string, encrypted_CredentialsData: object) {
+async function addCredentialData (folderName: string, encrypted_CredentialsData: string) {
   fs.appendFile(
     folderName,
     encrypted_CredentialsData, 

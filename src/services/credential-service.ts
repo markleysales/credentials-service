@@ -37,7 +37,8 @@ async function getCredentials (req: Request, res: Response) {
       res.status(406).json("requires application and environment data");
     };
       
-    const credentials = require(`../credentials/${app}-credentials.json`).credentials;
+    let encrypted_credentials: string = require(`../credentials/${app}-credentials.json`);
+    const credentials = JSON.parse(encrypted_credentials).credentials
     const result: Result = {
       success: true,
       application: app.toUpperCase(),
@@ -65,7 +66,7 @@ async function addCredentials (req: Request, res: Response) {
   await console.log(credentialsData);
 
   // cipher initialization
-  const cipher: crypto.Cipher = cryptoCipheriv(
+  const cipher: crypto.Cipher = crypto.createCipheriv(
     encryption_alg, security_key, init_vector
   );
   
